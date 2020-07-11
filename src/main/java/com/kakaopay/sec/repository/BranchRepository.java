@@ -1,21 +1,14 @@
 package com.kakaopay.sec.repository;
 
-import java.util.Map;
-import java.util.Optional;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.stereotype.Repository;
 
 import com.kakaopay.sec.model.entity.Branch;
 
-public interface BranchRepository {
+/**
+ * 관리점 관리 Repository
+ */
+@Repository
+public interface BranchRepository extends CrudRepository<Branch, String> {
 	
-    void save(Branch branch);
-    
-    Map<String, Branch> findAll();
-    
-    Optional<Branch> findById(String brName);
-    
-    void update(Branch branch);
-    
-    void delete(String brName);
-    
-    void deleteAll();
 }

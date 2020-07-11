@@ -1,6 +1,7 @@
 package com.kakaopay.sec.repository.impl;
 
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -15,50 +16,104 @@ import com.kakaopay.sec.repository.TransactionRepository;
 @Repository
 public class TransactionRepositoryImpl implements TransactionRepository {
 
-	private final RedisTemplate<String, Transaction> transactionRedisTemplate;
+	/** Redis 등록 키 접두어 */
+	private static final String KEY_PREFIX = "transaction";
 
-	private SetOperations<String, Transaction> listOperations;
+	/** 거래 내역 등록 SetOperations */
+	private SetOperations<String, Object> listOperations;
 
-	public TransactionRepositoryImpl(RedisTemplate<String, Transaction> transactionRedisTemplate) {
-		this.transactionRedisTemplate = transactionRedisTemplate;
-		this.listOperations = this.transactionRedisTemplate.opsForSet();
+	private final RedisTemplate<String, Object> redisTemplate;
+	
+	public TransactionRepositoryImpl(RedisTemplate<String, Object> redisTemplate) {
+		this.redisTemplate = redisTemplate;
+		this.listOperations = this.redisTemplate.opsForSet();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
-	public Set<Transaction> findAll() {
+	public void deleteAll() {
+
+		this.redisTemplate.delete(this.getAllKeys());
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public List<Transaction> findAll() {
 		
 		Set<String> keys = this.getAllKeys();
-		Set<Transaction> allTransactions= new HashSet<>();
+		
+		List<Transaction> transactions = new ArrayList<>();
 		
 		for(String key : keys) {
-			this.findById(key)
-				.ifPresent(allTransactions::addAll);
+			transactions.addAll(this.findByTemplateKey(key));
 		}
 		
-		return allTransactions;
+		return transactions;
+		
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public List<Transaction> findById(String acctNo) {
+
+		String key = KEY_PREFIX + acctNo;
+		
+		return this.findByTemplateKey(key);
+		
+	}
+
+	/**
+	 * 입력된 키에 포함된 거래 내역 목록을 반환한다.
+	 * 
+	 * @param key 등록 키
+	 * @return 거래 내역 목록
+	 */
+	private List<Transaction> findByTemplateKey(String key) {
+		
+		List<Transaction> transactions = new ArrayList<>();
+		Optional.ofNullable(this.listOperations.members(key))	
+			.ifPresent((Set<Object> trans) -> {
+				trans.stream()
+					.filter((Object obj) -> obj instanceof Transaction)
+					.map(Transaction.class::cast)
+					.forEach(transactions::add);
+			});
+		
+		return transactions;
 	}
 
 	@VisibleForTesting
 	Set<String> getAllKeys() {
-		return this.transactionRedisTemplate.keys("*");
+		
+		return this.redisTemplate.keys(KEY_PREFIX+"[^:]*");
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void save(Transaction transaction) {
 
-		this.listOperations.add(transaction.getAcctNo(), transaction);
+		String key = KEY_PREFIX + transaction.getAcctNo();
+		
+		this.listOperations.add(key, transaction);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
-	public Optional<Set<Transaction>> findById(String acctNo) {
-
-		return Optional.ofNullable(this.listOperations.members(acctNo));
-	}
-
-	@Override
-	public void deleteAll() {
-
-		this.transactionRedisTemplate.delete(this.getAllKeys());
+	public void saveAll(List<? extends Transaction> transactions) {
+	
+		for(Transaction transaction : transactions) {
+			this.save(transaction);
+		}
 	}
 
 

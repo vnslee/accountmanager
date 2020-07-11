@@ -1,7 +1,9 @@
 package com.kakaopay.sec.service.impl;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
-import java.util.Optional;
+import java.util.List;
 import java.util.Set;
 
 import org.springframework.stereotype.Service;
@@ -21,34 +23,22 @@ public class TransactionServiceImpl implements TransactionService {
 	}
 
 	@Override
-	public void save(Transaction transaction) {
-		
-		this.transactionRepository.save(transaction);
-	}
-
-	@Override
-	public Optional<Set<Transaction>> findByAcctNo(String acctNo) {
-
-		return this.transactionRepository.findById(acctNo);
-	}
-
-	@Override
-	public Set<Transaction> findAll() {
+	public List<Transaction> findAll() {
 
 		return this.transactionRepository.findAll();
 	}
 
 	@Override
-	public void update(Transaction transaction) {
+	public List<Transaction> findByAcctNo(String acctNo) {
 
-		this.transactionRepository.save(transaction);
+		return this.transactionRepository.findById(acctNo);
 	}
 
 	@Override
 	public Set<Integer> getAllTransacionYears() {
 
-		Set<Transaction> transactions = this.findAll();
-		Set<Integer> years = new HashSet<>();
+		List<Transaction> transactions = this.findAll();
+		List<Integer> years = new ArrayList<>();
 		
 		for(Transaction transaction : transactions) {
 
@@ -58,7 +48,10 @@ public class TransactionServiceImpl implements TransactionService {
 			}
 		}
 		
-		return years;
+		// 내림차순 정렬
+		Collections.sort(years);
+		
+		return new HashSet<>(years);
 	}
 
 }

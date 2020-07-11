@@ -1,21 +1,14 @@
 package com.kakaopay.sec.repository;
 
-import java.util.Map;
-import java.util.Optional;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.stereotype.Repository;
 
 import com.kakaopay.sec.model.entity.Account;
 
-public interface AccountRepository {
+/**
+ * 계좌 정보 관리 Repository
+ */
+@Repository
+public interface AccountRepository extends CrudRepository<Account, String> {
 	
-    void save(Account account);
-    
-    Map<String, Account> findAll();
-    
-    Optional<Account> findById(String acctNo);
-    
-    void update(Account account);
-    
-    void delete(String acctNo);
-    
-    void deleteAll();
 }

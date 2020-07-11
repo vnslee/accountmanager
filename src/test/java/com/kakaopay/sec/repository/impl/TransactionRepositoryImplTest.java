@@ -1,11 +1,11 @@
 package com.kakaopay.sec.repository.impl;
 
 import java.time.LocalDate;
-import java.util.Optional;
+import java.util.List;
 import java.util.Set;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +21,7 @@ class TransactionRepositoryImplTest {
 	@Autowired
 	private TransactionRepositoryImpl transactionRepository;
 
-	@AfterEach
+	@BeforeEach
 	public void reset() {
 		this.transactionRepository.deleteAll();
 	}
@@ -49,7 +49,7 @@ class TransactionRepositoryImplTest {
 
 		this.transactionRepository.save(transaction2);
 
-		Set<Transaction> actual = this.transactionRepository.findAll();
+		List<Transaction> actual = this.transactionRepository.findAll();
 
 		Assertions.assertEquals(2, actual.size());
 
@@ -81,7 +81,7 @@ class TransactionRepositoryImplTest {
 
 		this.transactionRepository.save(transaction2);
 
-		Set<Transaction> actual = this.transactionRepository.findAll();
+		List<Transaction> actual = this.transactionRepository.findAll();
 
 		Assertions.assertEquals(2, actual.size());
 
@@ -114,14 +114,13 @@ class TransactionRepositoryImplTest {
 
 		this.transactionRepository.save(transaction2);
 
-		Optional<Set<Transaction>> actual = this.transactionRepository.findById(acctNo);
+		List<Transaction> actual = this.transactionRepository.findById(acctNo);
 
-		Assertions.assertTrue(actual.isPresent(), "입력된값이 존재하는 경우 확인");
-		Assertions.assertEquals(2, actual.get().size());
+		Assertions.assertEquals(2, actual.size());
 
 		Assertions.assertAll("포함된 거래 내역 확인", 
-				() -> Assertions.assertTrue(actual.get().contains(transaction1)),
-				() -> Assertions.assertTrue(actual.get().contains(transaction2))
+				() -> Assertions.assertTrue(actual.contains(transaction1)),
+				() -> Assertions.assertTrue(actual.contains(transaction2))
 		);
 	}
 
@@ -139,10 +138,9 @@ class TransactionRepositoryImplTest {
 
 		this.transactionRepository.save(transaction);
 
-		Optional<Set<Transaction>> actual = this.transactionRepository.findById(acctNo);
+		List<Transaction> actual = this.transactionRepository.findById(acctNo);
 
-		Assertions.assertTrue(actual.isPresent(), "입력된값이 존재하는 경우 확인");
-		Assertions.assertTrue(actual.get().contains(transaction), "동일 ID인 transaction 거래 내역 포함 확인");
+		Assertions.assertTrue(actual.contains(transaction), "동일 ID인 transaction 거래 내역 포함 확인");
 	}
 
 	@Test
@@ -173,8 +171,8 @@ class TransactionRepositoryImplTest {
 
 		Assertions.assertEquals(2, actuals.size(), "포함된 거래의 계좌 번호만큼 포함 확인");
 		Assertions.assertAll("포함된 키의 내용 확인", 
-				() -> Assertions.assertTrue(actuals.contains(acctNo)),
-				() -> Assertions.assertTrue(actuals.contains(acctNo2))
+				() -> Assertions.assertTrue(actuals.contains("transaction"+acctNo)),
+				() -> Assertions.assertTrue(actuals.contains("transaction"+acctNo2))
 		);
 	}
 
