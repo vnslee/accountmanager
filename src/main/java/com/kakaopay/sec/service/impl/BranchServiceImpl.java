@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -21,12 +22,18 @@ import com.kakaopay.sec.service.TransactionService;
 @Service
 public class BranchServiceImpl implements BranchService {
 
-	private static final String CLOSED_BRANCH = "분당점";
-	
 	private final AccountService accountService;
 	
 	private final BranchRepository branchRepository;
 	
+	/** 통합된 관리점 명 */
+	@Value("${branch.merge.from}")
+	private String fromMergeBranchName;
+	
+	/** 통합한 관리점명 */
+	@Value("${branch.merge.to}")
+	private String toMergeBranchName;
+
 	private final TransactionService transactionService;
 	
 	public BranchServiceImpl(BranchRepository branchRepository,
@@ -46,13 +53,14 @@ public class BranchServiceImpl implements BranchService {
 
 		Optional<Branch> branchOpt = this.branchRepository.findById(brName);
 		
-		if(branchOpt.isEmpty() || brName.equals(CLOSED_BRANCH)) {
+		if(branchOpt.isEmpty() || brName.equals(this.fromMergeBranchName)) {
 			return Optional.empty();
 		}
 		
 		Branch branch = branchOpt.get();
 		
-		long sumAmt = this.getSumAmount(branch);
+		long sumAmt = this.getSumAmount(branch)
+				+ this.getMergedBranchAmt(brName);
 		
 		return Optional.of(BranchVo.builder()
 				.brName(branch.getBrName())
@@ -91,6 +99,25 @@ public class BranchServiceImpl implements BranchService {
 		Collections.sort(branchesByYear);
 		
 		return branchesByYear;
+	}
+
+	/**
+	 * 대상 관리점이 통합한 관리점이라면 대상 정보를 추가한다.
+	 * 
+	 * @param brName 관리점명
+	 * @return 관리점에 통합된 관리점 합계 정보
+	 */
+	private long getMergedBranchAmt(String brName) {
+		AtomicLong sum = new AtomicLong(0);
+		
+		if(brName.equals(this.toMergeBranchName)) {
+			this.branchRepository.findById(this.fromMergeBranchName)
+				.ifPresent((Branch fromBranch) -> 
+					sum.set(this.getSumAmount(fromBranch))
+			);
+		}
+		
+		return sum.get();
 	}
 
 	/**
